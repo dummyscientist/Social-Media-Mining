@@ -1,0 +1,129 @@
+#This script has explanation on almost every line, The work here is inspired from Marco Bonzanini's Social Media Mining With Python Book, Special Thanks To him..
+
+# I highly recommend you to execute the codes block by block.
+# Some libraries imported several times it is for the beginners who runs to code at different sessions and forgets to import the libraries.
+
+# First we need to import the required library Tweepy(You can use other twitter libraries like Twint) visit https://www.tweepy.org/
+import tweepy
+from tweepy import API
+from tweepy import OAuthHandler
+
+# We need to interact with twitter API, Before starting any application you have to register to twitter and get permission for your app. visit https://developer.twitter.com/
+# We will always interact with twitter API through two function scriptd below.
+def get_twitter_auth():
+  twitter_consumer_key = str('Your consumer key here')
+  twitter_consumer_secret = str('your consumer secret here')
+  twitter_access_token = str('your access token here')
+  twitter_access_secret = str('your access secret here')
+
+
+  auth = tweepy.OAuthHandler(twitter_consumer_key, twitter_consumer_secret)
+  auth.set_access_token(twitter_access_token,twitter_access_secret)
+  return auth
+
+def get_twitter_client():
+  auth = get_twitter_auth()
+  client=API(auth)
+  return client
+  
+# The script below prints the 10 tweets at your profile ( you can change the number of tweets viewed)
+from tweepy import Cursor   # Cursor works as hook in API and gets us what we want to obtain from it
+client= get_twitter_client()
+for status in Cursor(client.home_timeline).items(10):
+  print(status.text)
+
+# The reason we import to Json lines file is the JSON Lines format is particularly well suited for large-scale processing: many big data frameworks allow the developers to easily split the input file into chunks that can be processed in parallel by different workers.
+import json
+from tweepy import Cursor
+with open("benim_ilk_jeysonum.jsonl", "w") as f:  #this block will generate a jsonl file at current directory named "benim_ilk_jeysonum.jsonl" that contains mined information.
+  for page in Cursor(client.home_timeline, count=100).pages(1): # this script conducts a request at 1 page for 100 tweets, There are limitations at twitter about quantitity visit https://developer.twitter.com/en/docs/twitter-api/rate-limits
+    for status in page:
+      f.write(json.dumps(status._json)+'\n')
+      
+      
+import sys 
+import json 
+from tweepy import Cursor  
+ 
+if __name__ == '__main__': # I have discovered this usage in Bonzanini' book cool script, try to find it at google why ı have used this instead of nothing.
+  #user = sys.argv[1] # You can always use sys library to run this script from command prompt easily with certain arguments. in this case sys library is arbitrary
+  client = get_twitter_client() 
+  user=("kardes")
+  fname = 'kaclankac_yakalancan{}.jsonl'.format(user) 
+ 
+  with open(fname, 'w') as f: 
+    for page in Cursor(client.user_timeline, screen_name='jahreindota', count=200).pages(2):  # The script executes a mining act and gets Jahrein's twitter accounts 2 pages and 200 tweets per page. 
+      for status in page: # take every tweet from API
+        f.write(json.dumps(status._json)+'\n') # and write it to the json file
+        
+        
+  # We have learned how to mine simple things in twitter, from this point on we can try Stream API to get enormous amount of data without rate limits.
+  
+  # First of all we need a listener to see whats going on, Then we will maintaion listener operations
+  
+  
+  import sys 
+import string 
+import time 
+from tweepy import Stream 
+from tweepy.streaming import StreamListener 
+
+ 
+class CustomListener(StreamListener): 
+  # Hi! I am the listener. I listen.
+ 
+  def __init__(self, fname): # It is the inevitable part of OOP , we define a inheritable function for filename at this codeblock
+    safe_fname = format_filename(fname) 
+    self.outfile = 'stream_%s.jsonl' % safe_fname 
+ 
+  def on_data(self, data): # We will be accessing huge data so we have to make sure everything is going well, if anything goes wrong like exceeding rate limits or no data for us there it raises error that we set up.
+    try: 
+      with open(self.outfile, 'a') as f: 
+        f.write(data) 
+        return True 
+    except BaseException as e: 
+      sys.stderr.write('Error on_data: {}\n'.format(e)) 
+      time.sleep(5) 
+    return True 
+ 
+  def on_error(self, status): 
+    if status == 420: # 420 means you have exceeded limit, and you should wait.
+      sys.stderr.write('Rate limit exceeded\n') 
+      return False 
+    else: 
+      sys.stderr.write('Error {}\n'.format(status)) 
+      return True 
+ 
+def format_filename(fname): 
+  #This script not necessarily here, but it helps to name our output file safely, simply adds'_' character if there is no valid name at next step, this prepares.
+  return ''.join(convert_valid(one_char) for one_char in fname) 
+ 
+def convert_valid(one_char): 
+  #Converts character into '_' if invalid
+  valid_chars = '-_.%s%s' % (string.ascii_letters, string.digits) 
+  if one_char in valid_chars: 
+    return one_char 
+  else: 
+    return '_' 
+ 
+if __name__ == '__main__': 
+  liste=['\#UCI', '\#letourdefrance', 'cycling']
+  query = liste # list of arguments that we will be looking for(in this case we will be looking for Le Tour De France tweets.
+  query_fname = ' '.join(query) # string 
+  auth = get_twitter_auth() 
+  twitter_stream = Stream(auth, CustomListener(query_fname)) # Stream autharization and giving the arguments to listener
+  twitter_stream.filter(track=query, async=True) # A primitive filter with our arguments to get what we want
+  
+  
+  ''' !!!HINT!!!  
+                  Use the code below to save your jsonl file to a list
+  '''
+  import json
+data=[]
+with open('your jsonl file directory','r') as f:
+    for page in f:
+        data.append(f)
+        
+ 
+ 
+ 
